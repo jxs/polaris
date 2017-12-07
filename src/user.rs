@@ -3,6 +3,7 @@ use diesel;
 use diesel::prelude::*;
 use rand;
 use ring::{digest, pbkdf2};
+use ring;
 
 use db::ConnectionSource;
 use db::users;
@@ -17,7 +18,7 @@ pub struct User {
 	pub admin: i32,
 }
 
-static DIGEST_ALG: &'static pbkdf2::PRF = &pbkdf2::HMAC_SHA256;
+//static DIGEST_ALG: &'static pbkdf2::PRF = ring::digest::SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
 const HASH_ITERATIONS: u32 = 10000;
 type PasswordHash = [u8; CREDENTIAL_LEN];
@@ -35,7 +36,7 @@ impl User {
 	}
 
 	pub fn verify_password(&self, attempted_password: &str) -> bool {
-		pbkdf2::verify(DIGEST_ALG,
+		pbkdf2::verify(&ring::digest::SHA256,
 		               HASH_ITERATIONS,
 		               &self.password_salt,
 		               attempted_password.as_bytes(),
@@ -45,7 +46,7 @@ impl User {
 
 	fn hash_password(salt: &Vec<u8>, password: &str) -> Vec<u8> {
 		let mut hash: PasswordHash = [0; CREDENTIAL_LEN];
-		pbkdf2::derive(DIGEST_ALG,
+		pbkdf2::derive(&ring::digest::SHA256,
 		               HASH_ITERATIONS,
 		               salt,
 		               password.as_bytes(),
